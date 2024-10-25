@@ -106,7 +106,7 @@ impl Board {
 
             let mut vertical_found: bool = true;
             for j in 0..self.board.len() {
-                if self.board[i][j] != CellState::Player(player) {
+                if self.board[j][i] != CellState::Player(player) {
                     vertical_found = false;
                     break;
                 }
@@ -117,51 +117,40 @@ impl Board {
             }
         }
 
-        let temp_size: usize = self.board.len();
-        let half_temp_size: usize = self.board.len() / 2;
+        let mut temp_cell: (usize, usize) = (0 as usize, 0 as usize);
+        let mut diagonal_found: bool = true;
 
-        if temp_size % 2 != 0
-            && self.board[half_temp_size + 1][half_temp_size + 1] == CellState::Player(player)
-        {
-            let mut temp_cell: (usize, usize) = (0 as usize, 0 as usize);
-            let mut diagonal_found: bool = true;
-            loop {
-                if self.board[temp_cell.0][temp_cell.1] != CellState::Player(player) {
-                    diagonal_found = false;
-                    break;
-                }
-                temp_cell.0 += 1;
-                temp_cell.1 += 1;
-                if temp_cell.0 == self.board.len() {
-                    break;
-                }
+        loop {
+            if self.board[temp_cell.0][temp_cell.1] != CellState::Player(player) {
+                diagonal_found = false;
+                break;
             }
-
-            if diagonal_found {
-                return true;
-            }
-
-            temp_cell = (0 as usize, (self.board.len() - 1) as usize);
-
-            loop {
-                if self.board[temp_cell.0][temp_cell.1] != CellState::Player(player) {
-                    diagonal_found = false;
-                    break;
-                }
-
-                temp_cell.0 += 1;
-                temp_cell.1 -= 1;
-                if temp_cell.0 == self.board.len() {
-                    break;
-                }
-            }
-
-            if diagonal_found {
-                return true;
+            temp_cell.0 += 1;
+            temp_cell.1 += 1;
+            if temp_cell.0 == self.board.len() {
+                break;
             }
         }
 
-        return false;
+        if diagonal_found {
+            return true;
+        }
+
+        temp_cell = (0 as usize, (self.board.len() - 1) as usize);
+
+        loop {
+            if self.board[temp_cell.0][temp_cell.1] != CellState::Player(player) {
+                diagonal_found = false;
+                break;
+            }
+
+            temp_cell.0 += 1;
+            temp_cell.1 -= 1;
+            if temp_cell.0 == self.board.len() {
+                break;
+            }
+        }
+        return diagonal_found;
     }
 
     fn get_board_score(&self) -> GameState {
@@ -283,15 +272,26 @@ impl Game {
             .filter_map(|s| s.trim().parse().ok())
             .collect();
 
-        if numbers.len() < 2 {
-            return None;
-        }
+        if numbers.len() > 1 {
+            Some((numbers[0], numbers[1]))
+        } else if self.board.size < 10 && numbers.len() > 0 && numbers[0] > 9 {
+            let mut temp_vec: Vec<u8> = Vec::new();
+            let mut number = numbers.pop().unwrap();
 
-        Some((numbers[0], numbers[1]))
+            while number > 9 {
+                temp_vec.push(number % 10);
+                number /= 10;
+            }
+            temp_vec.push(number);
+
+            Some((temp_vec[1], temp_vec[0]))
+        } else {
+            None
+        }
     }
 }
 
 fn main() {
-    let mut game = Game::new(None);
+    let mut game = Game::new(Some(3));
     game.run();
 }
